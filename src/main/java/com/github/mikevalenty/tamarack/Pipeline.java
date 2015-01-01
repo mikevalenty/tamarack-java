@@ -1,6 +1,8 @@
 package com.github.mikevalenty.tamarack;
 
+import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import com.google.inject.util.Providers;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -41,25 +43,33 @@ public class Pipeline<T, TOut> {
         private final Queue<Filter<T, TOut>> queue;
 
         public NextFilter(Queue<Filter<T, TOut>> queue) {
-            this.queue = queue;
+            this.queue = new LinkedList<Filter<T, TOut>>(queue);
         }
 
         @Override
-        public TOut execute(T context, Filter<T, TOut> next) {
-
+        public TOut execute(T context, Provider<Filter<T, TOut>> nextProvider) {
             while (!queue.isEmpty()) {
                 Filter<T, TOut> filter = queue.remove();
                 if (filter.canExecute(context)) {
-                    return filter.execute(context, this);
+                    Filter<T, TOut> next = this;
+                    return filter.execute(context, Providers.of(next));
                 }
             }
 
             throw new EndOfChainException();
+//            return nextProvider.get().execute(context, nextProvider);
         }
     }
 
     public TOut execute(T context) {
-        Queue<Filter<T, TOut>> copy = new LinkedList<Filter<T, TOut>>(queue);
-        return new NextFilter(copy).execute(context, null);
+        Filter<T, TOut> endOfChain = new EndOfChainFilter<T, TOut>();
+        return new NextFilter(queue).execute(context, Providers.of(endOfChain));
+    }
+
+    public static class EndOfChainFilter<T, TOut> extends AbstractFilter<T, TOut> {
+        @Override
+        public TOut execute(T context, Provider<Filter<T, TOut>> nextProvider) {
+            throw new EndOfChainException();
+        }
     }
 }

@@ -1,8 +1,9 @@
+import com.github.mikevalenty.tamarack.*;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Provider;
 import org.junit.Test;
-import com.github.mikevalenty.tamarack.*;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -17,8 +18,8 @@ public class PipelineTests {
         }
 
         @Override
-        public String execute(Integer context, Filter<Integer, String> next) {
-            return next.execute(context + value, next);
+        public String execute(Integer context, Provider<Filter<Integer, String>> next) {
+            return next.get().execute(context + value, next);
         }
     }
 
@@ -30,15 +31,15 @@ public class PipelineTests {
         }
 
         @Override
-        public String execute(Integer context, Filter<Integer, String> next) {
-            String result = next.execute(context, next);
+        public String execute(Integer context, Provider<Filter<Integer, String>> next) {
+            String result = next.get().execute(context, next);
             return result + value;
         }
     }
 
     public static class InputToString extends AbstractFilter<Integer, String> {
         @Override
-        public String execute(Integer context, Filter<Integer, String> next) {
+        public String execute(Integer context, Provider<Filter<Integer, String>> next) {
             return context.toString();
         }
     }
@@ -50,8 +51,8 @@ public class PipelineTests {
         }
 
         @Override
-        public String execute(Integer context, Filter<Integer, String> next) {
-            return next.execute(context * 2, next);
+        public String execute(Integer context, Provider<Filter<Integer, String>> next) {
+            return next.get().execute(context * 2, next);
         }
     }
 
@@ -104,7 +105,14 @@ public class PipelineTests {
         new Pipeline<Integer, String>()
             .add(new AddToInput(2))
             .execute(5);
+    }
 
+    @Test(expected = EndOfChainException.class)
+    public void should_throw_end_of_chain_exception_when_only_filter_cant_execute() {
+
+        new Pipeline<Integer, String>()
+            .add(new DoubleWhenInputIsEven())
+            .execute(5);
     }
 
     @Test
