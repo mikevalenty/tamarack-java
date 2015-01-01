@@ -14,22 +14,22 @@ probably several things you'll want to do before letting the text into your data
 
 ```java
 public class BlogEngine {
-	...
+  ...
 
-	public int submit(Post post) {
-	
-		Pipeline<Post, Integer> pipeline = new Pipeline<Post, Integer>()
-			.add(new CanonicalizeHtml())
-			.add(new StripMaliciousTags())
-			.add(new RemoveJavascript())
-			.add(new RewriteProfanity())
-			.add(new GuardAgainstDoublePost())
-			.add(new SaveNewPost()));
+  public int submit(Post post) {
 
-		int newId = pipeline.execute(post);
+	Pipeline<Post, Integer> pipeline = new Pipeline<Post, Integer>()
+		.add(new CanonicalizeHtml())
+		.add(new StripMaliciousTags())
+		.add(new RemoveJavascript())
+		.add(new RewriteProfanity())
+		.add(new GuardAgainstDoublePost())
+		.add(new SaveNewPost()));
 
-		return newId;
-	}
+	int newId = pipeline.execute(post);
+
+	return newId;
+  }
 }
 ```
 
@@ -37,20 +37,20 @@ How about user login? There are all kinds of things you might need to do there:
 
 ```java
 public class LoginService {
-	...
+  ...
 
-	public boolean login(string username, string password) {
-	
-	    FilterFactory factory = new GuiceFilterFactory(injector);
+  public boolean login(string username, string password) {
 
-		Pipeline<LoginContext, Boolean pipeline = new Pipeline<LoginContext, Boolean>(factory)
-			.add(WriteLoginAttemptToAuditLog.class)
-			.add(LockoutOnConsecutiveFailures.class)
-			.add(AuthenticateAgainstLocalStore.class)
-			.add(AuthenticateAgainstLdap.class);
+	FilterFactory factory = new GuiceFilterFactory(injector);
 
-		return pipeline.execute(new LoginContext(username, password));
-	}
+	Pipeline<LoginContext, Boolean pipeline = new Pipeline<LoginContext, Boolean>(factory)
+		.add(WriteLoginAttemptToAuditLog.class)
+		.add(LockoutOnConsecutiveFailures.class)
+		.add(AuthenticateAgainstLocalStore.class)
+		.add(AuthenticateAgainstLdap.class);
+
+	return pipeline.execute(new LoginContext(username, password));
+  }
 }
 ```
 
@@ -58,16 +58,16 @@ Calculating a spam score in a random block of text:
 
 ```java
 public class SpamScorer {
-	...
-	
-	public double CalculateSpamScore(string text) {
-	
-		double score = new Pipeline<String, Double>()
-			.add(SpamCopBlacklistFilter.class)
-			.add(PrescriptionDrugFilter.class)
-			.add(PornographyFilter.class);
-			.execute(text);
-	}
+  ...
+
+  public double CalculateSpamScore(string text) {
+
+	double score = new Pipeline<String, Double>()
+		.add(SpamCopBlacklistFilter.class)
+		.add(PrescriptionDrugFilter.class)
+		.add(PornographyFilter.class);
+		.execute(text);
+  }
 }
 ```
 
@@ -76,12 +76,14 @@ How does it work?
 
 It's pretty simple, there is just one interface to implement and it looks like this:
 
-    public interface Filter<T, TOut> {
-    
-        boolean canExecute(T context);
-    
-        TOut execute(T context, Filter<T, TOut> next);
-    }
+```java
+public interface Filter<T, TOut> {
+
+  boolean canExecute(T context);
+
+  TOut execute(T context, Filter<T, TOut> next);
+}
+```
 
 Basically, you get an input to operate on and you return a value. The `next` parameter 
 is the next filter in the chain and using it in this fashion allows you several options:
@@ -97,17 +99,17 @@ modifying the _result_ of the next filter before returning.
 ```java
 public class PrescriptionDrugFilter extends AbstractFilter<String, Double> {
 
-    @Override
-	public Double execute(String text, Filter<String, Double> next) {
-	
-		Double score = next.execute(text, next);
+  @Override
+  public Double execute(String text, Filter<String, Double> next) {
 
-		if (text.contains("viagra")) {
-			score += .25;
-		}
+	Double score = next.execute(text, next);
 
-		return score;
+	if (text.contains("viagra")) {
+	  score += .25;
 	}
+
+	return score;
+  }
 }
 ```
 
@@ -117,17 +119,17 @@ continue to the next filter which looks for the user in an Ldap respository.
 
 ```java
 public class AuthenticateAgainstLocalStore extends AbstractFilter<LoginContext, Boolean> {
-	...
-	
-	public Boolean execute(LoginContext context, Filter<LoginContext, Boolean> next) {
-	
-		User user = repository.findByUsername(context.getUsername());
+  ...
 
-		if (user != null) {
-			return user.isValid(context.getPassword()); // short circuit
-		}
-		
-		return next.execute(context, next);
+  public Boolean execute(LoginContext context, Filter<LoginContext, Boolean> next) {
+
+	User user = repository.findByUsername(context.getUsername());
+
+	if (user != null) {
+	  return user.isValid(context.getPassword()); // short circuit
 	}
+
+	return next.execute(context, next);
+  }
 }
 ```

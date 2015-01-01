@@ -4,7 +4,7 @@ import com.google.inject.Provider;
 
 public interface Filter<T, TOut> {
 
-    boolean canExecute(T context);
+  boolean canExecute(T context);
 
-    TOut execute(T context, Provider<Filter<T, TOut>> nextProvider);
+  TOut execute(T context, Provider<Filter<T, TOut>> nextProvider);
 }
