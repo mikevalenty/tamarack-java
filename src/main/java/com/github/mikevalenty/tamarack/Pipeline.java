@@ -57,19 +57,10 @@ public class Pipeline<T, TOut> {
       }
 
       throw new EndOfChainException();
-//            return nextProvider.get().execute(context, nextProvider);
     }
   }
 
   public TOut execute(T context) {
-    Filter<T, TOut> endOfChain = new EndOfChainFilter<T, TOut>();
-    return new NextFilter(queue).execute(context, Providers.of(endOfChain));
-  }
-
-  public static class EndOfChainFilter<T, TOut> extends AbstractFilter<T, TOut> {
-    @Override
-    public TOut execute(T context, Provider<Filter<T, TOut>> nextProvider) {
-      throw new EndOfChainException();
-    }
+    return new NextFilter(queue).execute(context, null);
   }
 }
