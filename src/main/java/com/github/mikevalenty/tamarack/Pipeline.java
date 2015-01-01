@@ -41,7 +41,7 @@ public class Pipeline<T, TOut> {
     private final Queue<Filter<T, TOut>> queue;
 
     public NextFilter(Queue<Filter<T, TOut>> queue) {
-      this.queue = queue;
+      this.queue = new LinkedList<Filter<T, TOut>>(queue);
     }
 
     @Override
@@ -59,7 +59,6 @@ public class Pipeline<T, TOut> {
   }
 
   public TOut execute(T context) {
-    Queue<Filter<T, TOut>> copy = new LinkedList<Filter<T, TOut>>(queue);
-    return new NextFilter(copy).execute(context, null);
+    return new NextFilter(queue).execute(context, null);
   }
 }
