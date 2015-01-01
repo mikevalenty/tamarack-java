@@ -81,7 +81,7 @@ public interface Filter<T, TOut> {
 
   boolean canExecute(T context);
 
-  TOut execute(T context, Filter<T, TOut> next);
+  TOut execute(T context, Provider<Filter<T, TOut>> next);
 }
 ```
 
@@ -100,9 +100,9 @@ modifying the _result_ of the next filter before returning.
 public class PrescriptionDrugFilter extends AbstractFilter<String, Double> {
 
   @Override
-  public Double execute(String text, Filter<String, Double> next) {
+  public Double execute(String text, Provider<Filter<String, Double>> next) {
 
-	Double score = next.execute(text, next);
+	Double score = next.get().execute(text, next);
 
 	if (text.contains("viagra")) {
 	  score += .25;
@@ -121,7 +121,7 @@ continue to the next filter which looks for the user in an Ldap respository.
 public class AuthenticateAgainstLocalStore extends AbstractFilter<LoginContext, Boolean> {
   ...
 
-  public Boolean execute(LoginContext context, Filter<LoginContext, Boolean> next) {
+  public Boolean execute(LoginContext context, Provider<Filter<LoginContext, Boolean>> next) {
 
 	User user = repository.findByUsername(context.getUsername());
 
@@ -129,7 +129,7 @@ public class AuthenticateAgainstLocalStore extends AbstractFilter<LoginContext, 
 	  return user.isValid(context.getPassword()); // short circuit
 	}
 
-	return next.execute(context, next);
+	return next.get().execute(context, next);
   }
 }
 ```
